@@ -249,12 +249,18 @@ impl Grid {
             // Pink tiles rotate their neighbours (including diagonals) clockwise.
             Color::Pink => {
                 let neighbours = self.neighbours_clockwise(row, col);
+                // This window accounts for every pair except the (last, first) pair
+                // which we handle below
                 for window in neighbours.windows(2) {
-                    let first = window[0];
-                    let second = window[1];
+                    let first = window[1];
+                    let second = window[0];
 
                     *copy.get_mut(second.0, second.1) = self.get(first.0, first.1).clone();
                 }
+
+                let first = neighbours[0];
+                let second = neighbours.last().unwrap();
+                *copy.get_mut(second.0, second.1) = self.get(first.0, first.1).clone();
             }
         }
 
