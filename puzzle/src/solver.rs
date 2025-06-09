@@ -7,13 +7,6 @@ use crate::{
     Puzzle,
 };
 
-fn is_solved(goal: &Color, grid: &Grid) -> bool {
-    grid.get(0, 0) == goal
-        && grid.get(0, 2) == goal
-        && grid.get(2, 0) == goal
-        && grid.get(2, 2) == goal
-}
-
 /// Search for a solution to a Mora Jai puzzle.
 ///
 /// Returns a sequence of coordinates that corresponds to the solution's button presses
@@ -32,7 +25,7 @@ fn solve(goal: &Color, grid: &Grid) -> Option<Vec<(usize, usize)>> {
             seen.insert(grid.clone());
         }
 
-        if is_solved(goal, &grid) {
+        if grid.is_solved(goal) {
             return Some(path);
         }
 

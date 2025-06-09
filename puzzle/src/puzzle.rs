@@ -70,6 +70,13 @@ impl Grid {
         Self::new(colors)
     }
 
+    pub fn is_solved(&self, goal: &Color) -> bool {
+        self.get(0, 0) == goal
+            && self.get(0, 2) == goal
+            && self.get(2, 0) == goal
+            && self.get(2, 2) == goal
+    }
+
     fn valid_coord(row: usize, col: usize) -> bool {
         row < 3 && col < 3
     }
@@ -289,7 +296,7 @@ impl Puzzle {
     pub fn goal(&self) -> Color {
         self.goal
     }
-    
+
     pub fn get_tile(&self, row: usize, col: usize) -> Color {
         *self.current_state().get(row, col)
     }
@@ -301,6 +308,14 @@ impl Puzzle {
             Corner::SE => self.corners[2],
             Corner::NE => self.corners[3],
         }
+    }
+
+    pub fn is_solved(&self) -> bool {
+        self.state.is_solved(&self.goal())
+    }
+
+    pub fn press_tile(&mut self, row: usize, col: usize) {
+        self.state = self.state.press(row, col);
     }
 }
 
