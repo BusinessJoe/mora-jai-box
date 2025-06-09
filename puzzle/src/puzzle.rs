@@ -316,12 +316,41 @@ impl Puzzle {
         }
     }
 
+    fn get_corner_mut(&mut self, corner: Corner) -> &mut Color {
+        match corner {
+            Corner::SW => &mut self.corners[0],
+            Corner::NW => &mut self.corners[1],
+            Corner::SE => &mut self.corners[2],
+            Corner::NE => &mut self.corners[3],
+        }
+    }
+
     pub fn is_solved(&self) -> bool {
-        self.state.is_solved(&self.goal())
+        self.corners.iter().all(|color| color == &self.goal())
     }
 
     pub fn press_tile(&mut self, row: usize, col: usize) {
         self.state = self.state.press(row, col);
+    }
+
+    pub fn press_corner(&mut self, corner: Corner) {
+        let color = match corner {
+            Corner::NE => self.get_tile(2, 2),
+            Corner::SE => self.get_tile(0, 2),
+            Corner::SW => self.get_tile(0, 0),
+            Corner::NW => self.get_tile(2, 0),
+        };
+
+        if color == self.goal() {
+            *self.get_corner_mut(corner) = color;
+        } else {
+            self.reset();
+        }
+    }
+
+    fn reset(&mut self) {
+        self.corners = [const { Color::Gray }; 4];
+        self.state = self.original.clone();
     }
 }
 

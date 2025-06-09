@@ -71,7 +71,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "7" => puzzle.press_tile(2, 0),
             "8" => puzzle.press_tile(2, 1),
             "9" => puzzle.press_tile(2, 2),
-            _ => todo!(),
+            "q" => puzzle.press_corner(Corner::NW),
+            "w" => puzzle.press_corner(Corner::NE),
+            "a" => puzzle.press_corner(Corner::SW),
+            "s" => puzzle.press_corner(Corner::SE),
+            _ => println!("invalid input"),
         }
 
         print_puzzle(&puzzle);
