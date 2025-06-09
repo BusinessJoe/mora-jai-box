@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use colored::ColoredString;
 use puzzle::{Color, Corner, Puzzle};
 
@@ -21,6 +23,15 @@ fn print_puzzle(puzzle: &Puzzle) {
     );
 }
 
+fn print_solution(solution: &[(usize, usize)]) {
+    print!("Solution: ");
+    for (row, col) in solution {
+        let num = 1 + 3 * row + col;
+        print!("{} ", num);
+    }
+    println!();
+}
+
 fn colorize(s: &str, color: Color) -> ColoredString {
     // Import here to avoid adding .blue(), .red(), etc. methods to all strings
     use colored::Colorize;
@@ -38,14 +49,17 @@ fn colorize(s: &str, color: Color) -> ColoredString {
     }
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut puzzle = Puzzle::new_random();
     print_puzzle(&puzzle);
-    println!("{:?}", puzzle.solve());
+    let solution = puzzle.solve().expect("puzzle should always have a solution");
+    print_solution(&solution);
 
     while !puzzle.is_solved() {
+        print!("Input: ");
+        std::io::stdout().flush()?;
         let mut line = String::new();
-        std::io::stdin().read_line(&mut line).unwrap();
+        std::io::stdin().read_line(&mut line)?;
 
         match line.trim() {
             "1" => puzzle.press_tile(0, 0),
@@ -62,4 +76,6 @@ fn main() {
 
         print_puzzle(&puzzle);
     }
+
+    Ok(())
 }
