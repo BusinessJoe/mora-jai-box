@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Color {
     Gray,
     White,
@@ -11,16 +11,30 @@ pub enum Color {
     Yellow,
     Violet,
     Pink,
+    // Don't forget to update num_variants() after adding a color
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Puzzle {
-    goal: Color,
-    colors: [Color; 9],
-    corners: [Color; 4],
+impl Color {
+    pub fn num_variants() -> usize {
+        9
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Color::Gray => "gray",
+            Color::White => "white",
+            Color::Black => "black",
+            Color::Red => "red",
+            Color::Orange => "orange",
+            Color::Green => "green",
+            Color::Yellow => "yellow",
+            Color::Violet => "violet",
+            Color::Pink => "pink",
+        }
+    }
 }
 
-/// A Mora Jai puzzle.
+/// A Mora Jai puzzle's grid.
 ///
 /// The row, column pairs of each tile are as follows.
 /// -------------------
@@ -28,13 +42,32 @@ pub struct Puzzle {
 /// | 1,0 | 1,1 | 1,2 |
 /// | 0,0 | 0,1 | 0,2 |
 /// -------------------
-impl Puzzle {
-    pub fn new(colors: impl Into<[Color; 9]>, goal: Color) -> Self {
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Grid {
+    colors: [Color; 9],
+}
+
+impl Grid {
+    pub fn new(colors: impl Into<[Color; 9]>) -> Self {
         Self {
-            goal,
             colors: colors.into(),
-            corners: [const { Color::Gray }; 4],
         }
+    }
+
+    /// Convenience function to build Mora Jai puzzle grids
+    pub fn from_rows(r2: [Color; 3], r1: [Color; 3], r0: [Color; 3]) -> Self {
+        let colors = [
+            r0[0].clone(),
+            r0[1].clone(),
+            r0[2].clone(),
+            r1[0].clone(),
+            r1[1].clone(),
+            r1[2].clone(),
+            r2[0].clone(),
+            r2[1].clone(),
+            r2[2].clone(),
+        ];
+        Self::new(colors)
     }
 
     fn valid_coord(row: usize, col: usize) -> bool {
@@ -222,20 +255,53 @@ impl Puzzle {
     }
 }
 
-type Row = [Color; 3];
-/// Convenience function to build Mora Jai puzzle grids
-pub fn grid(r2: Row, r1: Row, r0: Row) -> [Color; 9] {
-    [
-        r0[0].clone(),
-        r0[1].clone(),
-        r0[2].clone(),
-        r1[0].clone(),
-        r1[1].clone(),
-        r1[2].clone(),
-        r2[0].clone(),
-        r2[1].clone(),
-        r2[2].clone(),
-    ]
+pub enum Corner {
+    NE,
+    SE,
+    SW,
+    NW,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Puzzle {
+    goal: Color,
+    pub(super) corners: [Color; 4],
+    /// The original state of the puzzle grid, used for resets
+    pub(super) original: Grid,
+    /// Current state of the puzzle grid
+    state: Grid,
+}
+
+impl Puzzle {
+    pub fn new(goal: Color, grid: Grid) -> Self {
+        Self {
+            goal,
+            corners: [const { Color::Gray }; 4],
+            original: grid.clone(),
+            state: grid,
+        }
+    }
+
+    pub fn current_state(&self) -> &Grid {
+        &self.state
+    }
+
+    pub fn goal(&self) -> Color {
+        self.goal
+    }
+    
+    pub fn get_tile(&self, row: usize, col: usize) -> Color {
+        *self.current_state().get(row, col)
+    }
+
+    pub fn get_corner(&self, corner: Corner) -> Color {
+        match corner {
+            Corner::SW => self.corners[0],
+            Corner::NW => self.corners[1],
+            Corner::SE => self.corners[2],
+            Corner::NE => self.corners[3],
+        }
+    }
 }
 
 #[cfg(test)]
@@ -244,13 +310,10 @@ mod tests {
 
     #[test]
     fn gray_works() {
-        let puzzle = Puzzle::new(
-            grid(
-                [Color::Gray, Color::Gray, Color::Gray],
-                [Color::Gray, Color::Gray, Color::Gray],
-                [Color::Gray, Color::Gray, Color::Gray],
-            ),
-            Color::Gray,
+        let puzzle = Grid::from_rows(
+            [Color::Gray, Color::Gray, Color::Gray],
+            [Color::Gray, Color::Gray, Color::Gray],
+            [Color::Gray, Color::Gray, Color::Gray],
         );
 
         for row in 0..3 {
@@ -263,88 +326,67 @@ mod tests {
 
     #[test]
     fn white_center_works() {
-        let puzzle = Puzzle::new(
-            grid(
-                [Color::Gray, Color::Gray, Color::Gray],
-                [Color::Gray, Color::White, Color::Gray],
-                [Color::Gray, Color::Gray, Color::Gray],
-            ),
-            Color::Gray,
+        let puzzle = Grid::from_rows(
+            [Color::Gray, Color::Gray, Color::Gray],
+            [Color::Gray, Color::White, Color::Gray],
+            [Color::Gray, Color::Gray, Color::Gray],
         );
 
         let new = puzzle.press(1, 1);
         assert_eq!(
             new,
-            Puzzle::new(
-                grid(
-                    [Color::Gray, Color::White, Color::Gray],
-                    [Color::White, Color::Gray, Color::White],
-                    [Color::Gray, Color::White, Color::Gray],
-                ),
-                Color::Gray,
+            Grid::from_rows(
+                [Color::Gray, Color::White, Color::Gray],
+                [Color::White, Color::Gray, Color::White],
+                [Color::Gray, Color::White, Color::Gray],
             )
         );
     }
 
     #[test]
     fn white_corner_works() {
-        let puzzle = Puzzle::new(
-            grid(
-                [Color::Gray, Color::Gray, Color::Gray],
-                [Color::Gray, Color::Gray, Color::Gray],
-                [Color::White, Color::Gray, Color::Gray],
-            ),
-            Color::Gray,
+        let puzzle = Grid::from_rows(
+            [Color::Gray, Color::Gray, Color::Gray],
+            [Color::Gray, Color::Gray, Color::Gray],
+            [Color::White, Color::Gray, Color::Gray],
         );
 
         let new = puzzle.press(0, 0);
         assert_eq!(
             new,
-            Puzzle::new(
-                grid(
-                    [Color::Gray, Color::Gray, Color::Gray],
-                    [Color::White, Color::Gray, Color::Gray],
-                    [Color::Gray, Color::White, Color::Gray],
-                ),
-                Color::Gray,
+            Grid::from_rows(
+                [Color::Gray, Color::Gray, Color::Gray],
+                [Color::White, Color::Gray, Color::Gray],
+                [Color::Gray, Color::White, Color::Gray],
             )
         );
     }
 
     #[test]
     fn black_works() {
-        let puzzle = Puzzle::new(
-            grid(
-                [Color::Gray, Color::Gray, Color::Gray],
-                [Color::Gray, Color::Gray, Color::Gray],
-                [Color::Black, Color::White, Color::Red],
-            ),
-            Color::Gray,
+        let puzzle = Grid::from_rows(
+            [Color::Gray, Color::Gray, Color::Gray],
+            [Color::Gray, Color::Gray, Color::Gray],
+            [Color::Black, Color::White, Color::Red],
         );
 
         let new = puzzle.press(0, 0);
         assert_eq!(
             new,
-            Puzzle::new(
-                grid(
-                    [Color::Gray, Color::Gray, Color::Gray],
-                    [Color::Gray, Color::Gray, Color::Gray],
-                    [Color::Red, Color::Black, Color::White]
-                ),
-                Color::Gray
+            Grid::from_rows(
+                [Color::Gray, Color::Gray, Color::Gray],
+                [Color::Gray, Color::Gray, Color::Gray],
+                [Color::Red, Color::Black, Color::White]
             ),
         );
 
         let new = new.press(0, 1);
         assert_eq!(
             new,
-            Puzzle::new(
-                grid(
-                    [Color::Gray, Color::Gray, Color::Gray],
-                    [Color::Gray, Color::Gray, Color::Gray],
-                    [Color::White, Color::Red, Color::Black]
-                ),
-                Color::Gray
+            Grid::from_rows(
+                [Color::Gray, Color::Gray, Color::Gray],
+                [Color::Gray, Color::Gray, Color::Gray],
+                [Color::White, Color::Red, Color::Black]
             ),
         );
 
@@ -354,25 +396,19 @@ mod tests {
 
     #[test]
     fn red_works() {
-        let puzzle = Puzzle::new(
-            grid(
-                [Color::White, Color::White, Color::White],
-                [Color::White, Color::Red, Color::Black],
-                [Color::Black, Color::Black, Color::Black],
-            ),
-            Color::Gray,
+        let puzzle = Grid::from_rows(
+            [Color::White, Color::White, Color::White],
+            [Color::White, Color::Red, Color::Black],
+            [Color::Black, Color::Black, Color::Black],
         );
 
         let new = puzzle.press(1, 1);
         assert_eq!(
             new,
-            Puzzle::new(
-                grid(
-                    [Color::Black, Color::Black, Color::Black],
-                    [Color::Black, Color::Red, Color::Red],
-                    [Color::Red, Color::Red, Color::Red],
-                ),
-                Color::Gray
+            Grid::from_rows(
+                [Color::Black, Color::Black, Color::Black],
+                [Color::Black, Color::Red, Color::Red],
+                [Color::Red, Color::Red, Color::Red],
             ),
         );
     }

@@ -1,3 +1,4 @@
 mod puzzle;
+mod solver;
 
-pub use puzzle::Puzzle;
+pub use puzzle::{Color, Grid, Puzzle, Corner};
