@@ -65,6 +65,11 @@ impl Puzzle {
         // Randomly generate puzzles until we find one with a solution
         loop {
             let goal: Color = rand::random();
+            // Goal cannot be gray - the puzzle would start in a solved state
+            if goal == Color::Gray {
+                continue;
+            }
+
             let colors: [Color; 9] = rand::random();
             let grid = Grid::new(colors);
 
