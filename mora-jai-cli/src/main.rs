@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use colored::ColoredString;
+use colored::{control, ColoredString};
 use puzzle::{Color, Corner, Puzzle};
 
 fn print_puzzle(puzzle: &Puzzle) {
@@ -50,10 +50,14 @@ fn colorize(s: &str, color: Color) -> ColoredString {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(windows)]
+    control::set_virtual_terminal(true).unwrap();
+
+    println!("Generating puzzle...");
     let mut puzzle = Puzzle::new_random();
     print_puzzle(&puzzle);
-    let solution = puzzle.solve().expect("puzzle should always have a solution");
-    print_solution(&solution);
+    // let solution = puzzle.solve().expect("puzzle should always have a solution");
+    // print_solution(&solution);
 
     while !puzzle.is_solved() {
         print!("Input: ");
