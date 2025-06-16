@@ -11,13 +11,12 @@ pub enum Color {
     Yellow,
     Violet,
     Pink,
-    // Don't forget to update num_variants() after adding a color
+    Blue,
+    // Don't forget to update NUM_VARIANTS after adding a color
 }
 
 impl Color {
-    pub fn num_variants() -> usize {
-        9
-    }
+    pub const NUM_VARIANTS: usize = 10;
 
     pub fn name(&self) -> &'static str {
         match self {
@@ -30,6 +29,7 @@ impl Color {
             Color::Yellow => "yellow",
             Color::Violet => "violet",
             Color::Pink => "pink",
+            Color::Blue => "blue",
         }
     }
 }
@@ -131,10 +131,7 @@ impl Grid {
         neighbours
     }
 
-    /// Press a tile on this puzzle. The resulting puzzle is returned.
-    pub fn press(&self, row: usize, col: usize) -> Self {
-        let color = self.get(row, col);
-
+    fn apply_color(&self, color: Color, row: usize, col: usize) -> Self {
         let mut copy = self.clone();
 
         match color {
@@ -262,9 +259,24 @@ impl Grid {
                 let second = neighbours.last().unwrap();
                 *copy.get_mut(second.0, second.1) = self.get(first.0, first.1).clone();
             }
+            // Blue tiles emulate the color of the middle tile
+            Color::Blue => {
+                // But if the middle tile is blue we do nothing
+                // on pain of infinite recursion
+                let middle_color = self.get(1, 1);
+                if middle_color != &Color::Blue {
+                    copy = self.apply_color(*middle_color, row, col);
+                }
+            }
         }
 
         copy
+    }
+
+    /// Press a tile on this puzzle. The resulting puzzle is returned.
+    pub fn press(&self, row: usize, col: usize) -> Self {
+        let color = self.get(row, col);
+        self.apply_color(*color, row, col)
     }
 }
 
@@ -343,7 +355,7 @@ impl Puzzle {
     pub fn press_tile(&mut self, row: usize, col: usize) {
         self.state = self.state.press(row, col);
 
-        // After a press, we need to reset corners which no longer match 
+        // After a press, we need to reset corners which no longer match
         for corner in [Corner::NE, Corner::SE, Corner::NW, Corner::SW] {
             let (row, col) = Self::corner_to_tile(corner);
             if self.get_tile(row, col) != self.get_corner(corner) {
@@ -476,5 +488,37 @@ mod tests {
                 [Color::Red, Color::Red, Color::Red],
             ),
         );
+    }
+
+    #[test]
+    fn blue_works() {
+        let puzzle = Grid::from_rows(
+            [Color::Blue, Color::Gray, Color::Gray],
+            [Color::Gray, Color::Black, Color::Gray],
+            [Color::Gray, Color::Gray, Color::Gray],
+        );
+
+        let new = puzzle.press(2, 0);
+        assert_eq!(
+            new,
+            Grid::from_rows(
+                [Color::Gray, Color::Blue, Color::Gray],
+                [Color::Gray, Color::Black, Color::Gray],
+                [Color::Gray, Color::Gray, Color::Gray],
+            ),
+        );
+    }
+
+    #[test]
+    fn blue_does_not_recurse_forever() {
+        let puzzle = Grid::from_rows(
+            [Color::Blue, Color::Gray, Color::Gray],
+            [Color::Gray, Color::Blue, Color::Gray],
+            [Color::Gray, Color::Gray, Color::Gray],
+        );
+
+        // Nothing should happen
+        let new = puzzle.press(2, 0);
+        assert_eq!(new, puzzle);
     }
 }

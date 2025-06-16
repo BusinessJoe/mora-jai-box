@@ -45,7 +45,7 @@ fn solve(goal: &Color, grid: &Grid) -> Option<Vec<(usize, usize)>> {
 
 impl Distribution<Color> for StandardUniform {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Color {
-        match rng.random_range(0..Color::num_variants()) {
+        match rng.random_range(0..Color::NUM_VARIANTS) {
             0 => Color::Gray,
             1 => Color::White,
             2 => Color::Black,
@@ -55,7 +55,8 @@ impl Distribution<Color> for StandardUniform {
             6 => Color::Yellow,
             7 => Color::Violet,
             8 => Color::Pink,
-            _ => unreachable!(),
+            9 => Color::Blue,
+            Color::NUM_VARIANTS.. => unreachable!(),
         }
     }
 }

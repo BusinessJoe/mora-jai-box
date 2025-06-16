@@ -46,6 +46,7 @@ fn colorize(s: &str, color: Color) -> ColoredString {
         Color::Orange => s.truecolor(255, 165, 0),
         Color::Yellow => s.truecolor(255, 255, 0),
         Color::Violet => s.truecolor(127, 0, 255),
+        Color::Blue => s.truecolor(0, 0, 255),
     }
 }
 
