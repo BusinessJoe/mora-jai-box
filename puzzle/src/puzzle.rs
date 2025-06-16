@@ -268,6 +268,7 @@ impl Grid {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Corner {
     NE,
     SE,
@@ -329,17 +330,31 @@ impl Puzzle {
         self.corners.iter().all(|color| color == &self.goal())
     }
 
+    /// Maps a Corner to its corresponding corner tile coordinate
+    fn corner_to_tile(corner: Corner) -> (usize, usize) {
+        match corner {
+            Corner::NE => (2, 2),
+            Corner::SE => (0, 2),
+            Corner::SW => (0, 0),
+            Corner::NW => (2, 0),
+        }
+    }
+
     pub fn press_tile(&mut self, row: usize, col: usize) {
         self.state = self.state.press(row, col);
+
+        // After a press, we need to reset corners which no longer match 
+        for corner in [Corner::NE, Corner::SE, Corner::NW, Corner::SW] {
+            let (row, col) = Self::corner_to_tile(corner);
+            if self.get_tile(row, col) != self.get_corner(corner) {
+                *self.get_corner_mut(corner) = Color::Gray;
+            }
+        }
     }
 
     pub fn press_corner(&mut self, corner: Corner) {
-        let color = match corner {
-            Corner::NE => self.get_tile(2, 2),
-            Corner::SE => self.get_tile(0, 2),
-            Corner::SW => self.get_tile(0, 0),
-            Corner::NW => self.get_tile(2, 0),
-        };
+        let (row, col) = Self::corner_to_tile(corner);
+        let color = self.get_tile(row, col);
 
         if color == self.goal() {
             *self.get_corner_mut(corner) = color;
