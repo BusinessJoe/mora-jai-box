@@ -70,11 +70,11 @@ impl Grid {
         Self::new(colors)
     }
 
-    pub fn is_solved(&self, goal: &Color) -> bool {
-        self.get(0, 0) == goal
-            && self.get(0, 2) == goal
-            && self.get(2, 0) == goal
-            && self.get(2, 2) == goal
+    pub fn is_solved(&self, goals: &[Color; 4]) -> bool {
+        self.get(2, 0) == &goals[0]
+            && self.get(2, 2) == &goals[1]
+            && self.get(0, 0) == &goals[2]
+            && self.get(0, 2) == &goals[3]
     }
 
     fn valid_coord(row: usize, col: usize) -> bool {
@@ -290,7 +290,7 @@ pub enum Corner {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Puzzle {
-    goal: Color,
+    pub(super) goals: [Color; 4],
     pub(super) corners: [Color; 4],
     /// The original state of the puzzle grid, used for resets
     pub(super) original: Grid,
@@ -299,9 +299,9 @@ pub struct Puzzle {
 }
 
 impl Puzzle {
-    pub fn new(goal: Color, grid: Grid) -> Self {
+    pub fn new(goals: [Color; 4], grid: Grid) -> Self {
         Self {
-            goal,
+            goals,
             corners: [const { Color::Gray }; 4],
             original: grid.clone(),
             state: grid,
@@ -312,8 +312,13 @@ impl Puzzle {
         &self.state
     }
 
-    pub fn goal(&self) -> Color {
-        self.goal
+    pub fn goal(&self, corner: Corner) -> Color {
+        match corner {
+            Corner::NW => self.goals[0],
+            Corner::NE => self.goals[1],
+            Corner::SW => self.goals[2],
+            Corner::SE => self.goals[3],
+        }
     }
 
     pub fn get_tile(&self, row: usize, col: usize) -> Color {
@@ -339,7 +344,7 @@ impl Puzzle {
     }
 
     pub fn is_solved(&self) -> bool {
-        self.corners.iter().all(|color| color == &self.goal())
+        self.corners == self.goals
     }
 
     /// Maps a Corner to its corresponding corner tile coordinate
@@ -368,7 +373,7 @@ impl Puzzle {
         let (row, col) = Self::corner_to_tile(corner);
         let color = self.get_tile(row, col);
 
-        if color == self.goal() {
+        if color == self.goal(corner) {
             *self.get_corner_mut(corner) = color;
         } else {
             self.reset();

@@ -11,7 +11,7 @@ use crate::{
 ///
 /// Returns a sequence of coordinates that corresponds to the solution's button presses
 /// or None if no solution exists.
-fn solve(goal: &Color, grid: &Grid) -> Option<Vec<(usize, usize)>> {
+fn solve(goals: &[Color; 4], grid: &Grid) -> Option<Vec<(usize, usize)>> {
     type Solution = (Grid, Vec<(usize, usize)>);
 
     let start = (grid.clone(), vec![]);
@@ -25,7 +25,7 @@ fn solve(goal: &Color, grid: &Grid) -> Option<Vec<(usize, usize)>> {
             seen.insert(grid.clone());
         }
 
-        if grid.is_solved(goal) {
+        if grid.is_solved(goals) {
             return Some(path);
         }
 
@@ -65,23 +65,23 @@ impl Puzzle {
     pub fn new_random() -> Self {
         // Randomly generate puzzles until we find one with a solution
         loop {
-            let goal: Color = rand::random();
+            let goals: [Color; 4] = rand::random();
             // Goal cannot be gray - the puzzle would start in a solved state
-            if goal == Color::Gray {
+            if goals.contains(&Color::Gray) {
                 continue;
             }
 
             let colors: [Color; 9] = rand::random();
             let grid = Grid::new(colors);
 
-            if solve(&goal, &grid).is_some() {
-                return Self::new(goal, grid);
+            if solve(&goals, &grid).is_some() {
+                return Self::new(goals, grid);
             }
         }
     }
 
     pub fn solve(&self) -> Option<Vec<(usize, usize)>> {
-        solve(&self.goal(), &self.original)
+        solve(&self.goals, &self.original)
     }
 }
 
@@ -97,7 +97,7 @@ mod tests {
             [Color::Gray, Color::Gray, Color::White],
         );
 
-        let solution = solve(&Color::White, &grid);
+        let solution = solve(&[Color::White; 4], &grid);
 
         assert_eq!(Some(vec![(0, 2), (0, 1)]), solution);
     }
